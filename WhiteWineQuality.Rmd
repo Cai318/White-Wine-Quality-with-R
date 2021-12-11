@@ -1,0 +1,546 @@
+---
+title: 'White Wine Quality: Chemical Influence'
+author: 'by Callie Lamb'
+date: 'December 2021'
+output: 
+  html_document:
+    theme: paper
+    toc: true
+    highlight: tango
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(gridExtra)
+library(grid)
+```
+
+## Introduction
+
+Below, I will be exploring a tidy dataset of white wine to find out what 
+physiochemical properties most influence the quality of taste and relate to 
+others. The quality variable is based on taste testing scores between 0 and 10 
+(worst to best), all other variables are based on physiochemical tests. 
+
+I want to start by taking a look at the structure of the dataset.
+
+```{r echo=FALSE, Load_the_Data}
+# Load the dataset
+wine <- read.csv('wineQualityWhites.csv')
+
+# Display dataset information
+str(wine)
+```
+
+I am going to remove column "X", as this column is the identifier and I don't 
+want these numbers included in any statistics. After that there will be 11
+input variables and 1 output variable (quality), each with 4898 observations. 
+
+```{r echo=FALSE}
+# Removing column 'X'
+wine$X <- NULL
+```
+
+***
+
+## Univariate Plots Section
+
+Now I am going to create histogram plots and summary prints of each 
+variable to get a better idea of how the observations are distributed.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(10,3), Univariate_Plots}
+# fixed.acidity histogram
+ggplot(wine, aes(x = fixed.acidity)) + 
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of fixed.acidity
+summary(wine$fixed.acidity)
+```
+
+Fixed acidity appears to be normally distributed but is slightly right skewed. 
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# volatile.acidity histogram
+ggplot(wine, aes(x = volatile.acidity)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of volatile.acidity
+summary(wine$volatile.acidity)
+```
+
+Volatile acidity is bell-curve shaped with uniform distribution on both 
+sides of the peak, but becomes slightly right skewed. 
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# citric.acid histogram
+ggplot(wine, aes(x = citric.acid)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of citric.acid
+summary(wine$citric.acid) 
+```
+
+Citric acid distribution is right skewed with a small peak in the lower 
+shoulder of the curve. 
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# residual.sugar histogram
+ggplot(wine, aes(x = residual.sugar)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of residual.sugar
+summary(wine$residual.sugar)
+```
+
+Residual sugar distribution is very right skewed.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# chlorides histogram
+ggplot(wine, aes(x = chlorides)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of chlorides
+summary(wine$chlorides) 
+```
+
+Chlorides have a close distribution and are slightly left skewed.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# free.sulfur.dioxide histogram
+ggplot(wine, aes(x = free.sulfur.dioxide)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of free.sulfur.dioxide
+summary(wine$free.sulfur.dioxide)
+```
+
+Free sulfur dioxide has a mostly normal distribution that is 
+slightly right skewed.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# total.sulfur.dioxide histogram
+ggplot(wine, aes(x = total.sulfur.dioxide)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of total.sulfur.dioxide
+summary(wine$total.sulfur.dioxide)
+```
+
+Total sulfur dioxide has a wide distribution that is right skewed.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# density histogram
+ggplot(wine, aes(x = density)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of density
+summary(wine$density) 
+```
+
+Density distribution is right skewed.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# pH histogram
+ggplot(wine, aes(x = pH)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of pH
+summary(wine$pH)
+```
+
+pH has a mostly symmetrical, wide distribution.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# sulphates histogram
+ggplot(wine, aes(x = sulphates)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of sulphates
+summary(wine$sulphates)
+```
+
+Sulphates have a wide distribution that is slightly right skewed.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# alcohol histogram
+ggplot(wine, aes(x = alcohol)) + 
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3')
+
+# Summary of alcohol
+summary(wine$alcohol)
+```
+
+Alcohol has a right skewed, wide and uniform distribution.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# quality histogram
+ggplot(wine, aes(x = quality)) +
+  geom_histogram(aes(y = ..density..), color = 'deepskyblue3') 
+
+# Summary of quality
+summary(wine$quality)
+```
+
+Most of the quality scores are 6, with 5 and 7 next in line.
+
+***
+
+### Univariate Analysis
+
+1. What is the structure of your dataset?
+
+* This is a tidy, multivariate dataset consisting of 12 variables and 4898 
+observations. 11 of the variables are numerical and 1 (quality) is an integer.
+
+2. What is/are the main feature(s) of interest in your dataset?
+
+* Quality is the main feature of this dataset. 
+
+3. What other features in the dataset do you think will help support your 
+investigation into your feature(s) of interest?
+
+* All of the other variables will each support my investigation of finding 
+what chemical properties most affect the quality.
+
+4. Did you create any new variables from existing variables in the dataset?
+
+* I did not create any additional variables.
+
+5. Of the features you investigated, were there any unusual distributions?
+
+* Yes, citric.acid had a small peak to the right of the main peak.
+Residual.sugar is dense around 1 and 2, but spreads to the right over a 
+wide range.  
+
+6. Did you perform any operations on the data to tidy, adjust, or change 
+the form of the data? If so, why did you do this?
+
+* I did not modify any parts of the data.
+
+***
+
+## Bivariate Plots Section 
+
+I think that the fastest way to identify correlations between variables 
+would be to create a pairs plot.
+
+```{r echo=FALSE, Bivariate_Plots, warning=FALSE, fig.dim = c(10, 9)}
+# Creating a pairs correlation graph
+pairs.panels(wine)
+```
+
+From the plot above, there are a few variables that I'd like to explore more. 
+First, between residual.sugar and density with the correlation of 0.84.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine, aes(residual.sugar, density)) +
+  geom_point(alpha = 0.3) + 
+  stat_smooth(method = 'lm')
+```
+
+The graph shows a positive correlation between these two variables with 
+the points tightly following along the mean correlation line.
+
+***
+
+Next, between free.sulfur.dioxide and total.sulfur.dioxide with the 
+correlation of 0.62.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine, aes(free.sulfur.dioxide, total.sulfur.dioxide)) + 
+  geom_point(alpha = 0.3) + 
+  stat_smooth(method = 'lm')
+```
+
+The graph shows a positive correlation between these two variables with 
+the points getting heavier towards the higher end of total.sulfur.dioxide.
+
+***
+
+Next, between total.sulfur.dioxide and density with the 
+correlation of 0.53.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine, aes(total.sulfur.dioxide, density)) + 
+  geom_point(alpha = 0.3) + 
+  stat_smooth(method = 'lm')
+```
+
+The graph shows a positive correlation between these two variables with 
+the points tightly following along the mean correlation line.
+
+***
+
+Next, between residual.sugar and total.sulfur.dioxide with the 
+correlation of 0.40.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine, aes(residual.sugar, total.sulfur.dioxide)) + 
+  geom_point(alpha = 0.3) + 
+  stat_smooth(method = 'lm')
+```
+
+The graph shows a positive correlation between these two variables however,
+the spread is wide between the low and high ends of total.sulfur.dioxide.
+
+***
+
+Last, between alcohol and quality with the correlation of 0.44.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine, aes(alcohol, quality)) + 
+  geom_point(alpha = 0.3) + 
+  stat_smooth(method = 'lm')
+```
+
+The graph shows a positive correlation between these two variables.
+
+***
+
+### Bivariate Analysis
+
+1. How did the feature(s) of interest vary with other features in 
+the dataset?
+
+* From the pairs correlation plot I could see that as fixed.acidity increases,
+the quality decreases. When free.sulfur.dioxide is low, there is a positive 
+correlation with quality. The quality then starts dropping as 
+free.sulfur.dioxide increases. This is the same with total.sulfur.dioxide. 
+Alcohol was the highest scoring input variable with the output variable, 
+quality.
+
+2. Did you observe any interesting relationships between the other features 
+(not the main feature(s) of interest)?
+
+* I found it interesting that density and alcohol have the lowest correlation,
+yet density and residual.sugar have the strongest correlation.
+
+3. What was the strongest relationship you found?
+
+* For the input variables, residual.sugar and density had the highest 
+correlation with a score of 0.839. The highest correlation with the output 
+variable of quality was with the alcohol variable. The strongest negative 
+correlation was between density and alcohol with a score of -0.78.
+
+***
+
+## Multivariate Plots Section 
+
+Based on the plots above, I'm going to zoom in and plot using facet_wrap 
+to break the plots out by quality score.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(10,4), Multivariate_Plots}
+# Multivariate plot
+ggplot(wine, aes(residual.sugar, density)) + 
+  geom_point(cex = 0.6) +
+  coord_cartesian(xlim = c(0, 23), ylim = c(0.985, 1.005)) +
+  facet_wrap(~quality, ncol = 4) +
+  geom_smooth(method = 'lm')
+```
+
+Here, I can see that residual.sugar and density have a positive correlation
+with every unique quality observation. It also appears that as the means 
+between residual.sugar and density decrease, quality increases.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Multivariate plot
+ggplot(wine, aes(free.sulfur.dioxide, total.sulfur.dioxide)) +
+  geom_point(cex = 0.6) +
+  coord_cartesian(xlim = c(0, 110), ylim = c(0, 275)) +
+  facet_wrap(~quality, ncol = 4) +
+  geom_smooth(method = 'lm')
+```
+
+total.sulfur.dioxide and free.sulfur.dioxide also have a positive correlation
+with every unique quality observation. However, after the quality score of 6,
+the positive correlation starts to decrease.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Multivariate plot
+ggplot(wine, aes(total.sulfur.dioxide, density)) +
+  geom_point(cex = 0.6) +
+  coord_cartesian(xlim = c(0, 260), ylim = c(0.985, 1.005)) +
+  facet_wrap(~quality, ncol = 4) +
+  geom_smooth(method = 'lm')
+```
+
+total.sulfur.dioxide and density also have a positive correlation
+with every unique quality observation. 
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Multivariate plot
+ggplot(wine, aes(residual.sugar, total.sulfur.dioxide)) +
+  geom_point(cex = 0.6) +
+  coord_cartesian(xlim = c(0, 20), ylim = c(0, 527)) +
+  facet_wrap(~quality, ncol = 4) +
+  geom_smooth(method = 'lm')
+```
+
+residual.sugar and total.sulfur.dioxide have a positive correlation
+with each unique quality observation, although not as strong as the 
+plots above.
+
+***
+
+### Multivariate Analysis
+
+1. Were there features that strengthened each other in terms of 
+looking at your feature(s) of interest?
+
+* Yes. With quality brought into the correlations between residual.sugar 
+and density, total.sulfur.dioxide and free.sulfur.dioxide, and between 
+total.sulfur.dioxide and density, the positive correlations strengthened. 
+
+2. Were there any interesting or surprising interactions between features?
+
+* Yes. The correlation between alcohol and quality is positive yet, none of 
+the other input variables had a strong positive correlation with alcohol. 
+
+***
+
+## Final Plots and Summary 
+
+### Plot One
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_One, fig.dim = c(10, 3)}
+# Alcohol histogram
+ggplot(wine, aes(x = alcohol)) + 
+  labs(title = 'Alcohol Distribution', x = "alcohol (%)") +
+  geom_histogram(aes(y = ..density..), color = 'black', 
+                 fill = 'deepskyblue3') +
+  stat_density(alpha = .3, color = 'red') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Description One
+
+I chose alcohol content as my first plot because I found it interesting 
+how wide and somewhat uniform the distribution is compared to all of the 
+other variables.
+
+***
+
+### Plot Two
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Two, fig.dim = c(10, 6)}
+# Density vs residual sugar scatter plot
+p_1 <- ggplot(wine, aes(density, residual.sugar)) + 
+  geom_point(color = 'deepskyblue3', cex = 0.6, alpha = 0.5) +
+  coord_cartesian(xlim = c(0.985, 1.005), ylim = c(0, 22)) +
+  geom_smooth(method = 'lm', color = 'darkred') +
+  labs(title = 'Density vs. Residual Sugar', x = 'density (g/cm^3)', 
+       y = 'residual sugar (g/dm)') +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+# Density vs alcohol scatter plot  
+p_2 <- ggplot(wine, aes(density, alcohol)) + 
+  geom_point(color = 'deepskyblue3', cex = 0.6, alpha = 0.5) +
+  coord_cartesian(xlim = c(0.985, 1.005), ylim = c(8, 14)) +
+  geom_smooth(method = 'lm', color = 'darkred') +
+  labs(title = 'Density vs. Alcohol', x = 'density (g/cm^3)', 
+       y = 'alcohol (%)') +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+# Plot the two side by side
+grid.arrange(p_1, p_2, ncol = 2, top = textGrob('Strongest Relationships', 
+                                                gp = gpar(fontsize = 15)))
+```
+
+### Description Two
+
+I chose this as my second plot to show how there is a strong positive 
+correlation between density and residual.sugar, and a strong negative 
+correlation between density and alcohol.
+
+***
+
+### Plot Three
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Three, fig.dim=c(10,6)}
+# Density vs residual sugar with quality
+ggplot(wine, aes(density, residual.sugar)) + 
+  geom_point(aes(color = quality), breaks = 7) +
+  scale_colour_gradient(low = 'darkorchid4', high = 'cyan') +
+  geom_smooth(method = 'lm', color = 'darkred') +
+  coord_cartesian(xlim = c(0.984, 1.01), ylim = c(0, 23)) +
+  labs(title = 'Density vs. Residual Sugar with Quality', 
+       x = 'density (g/cm^3)', y = 'residual sugar (g/dm^3)') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Description Three
+
+I chose this plot to reflect the strong positive correlation between 
+residual.sugar and density with quality reflected in the point colors. 
+
+***
+
+## Reflection 
+
+From this analysis, I found that better tasting white wine is low in 
+density and low in residual sugar. I was also surprised to discover how white 
+wine with high alcohol by volume improved quality score only by perception, 
+as this variable did not correlate to any other chemical variable. This makes 
+me wonder if the taste testers knew and were influenced by information about 
+each of the white wines they tested, affecting the quality score. 
+
+Some of the struggles I had were sticking to the idea of a "quick and dirty" 
+analysis. Through majority of this project I wanted to make beautiful looking
+plots, so I spent a lot of wasted time researching plot aesthetics and not
+actually analyzing the data. Once I realized what I was doing and that I 
+needed to keep it "quick and dirty" the analysis and plotting came more easily.
+
+I do think this dataset could be used in machine learning for predictive 
+models of what physiochemicals influence the taste of white wine. However, 
+it should be used alongside many other similar datasets from controlled taste 
+testing events. It should also be noted that the sensory quality score of wine 
+would most likely vary in different regions of the world. What is considered 
+a great tasting wine in one region, may be completely opposite in another.
+
+The dataset used in this analysis was downloaded from:
+
+* https://s3.amazonaws.com/udacity-hosted-downloads/ud651/wineQualityWhites.csv
+
+For more information regarding this dataset, please visit these sites 
+[Cortez et al., 2009]: 
+
+* http://dx.doi.org/10.1016/j.dss.2009.05.016
+* http://www3.dsi.uminho.pt/pcortez/winequality09.pdf
+* http://www3.dsi.uminho.pt/pcortez/dss09.bib
