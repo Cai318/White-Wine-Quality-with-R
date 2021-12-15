@@ -1,0 +1,1200 @@
+---
+title: 'White Wine Quality: Chemical Influence'
+author: 'by Callie Lamb'
+date: 'December 2021'
+output: 
+  html_document:
+    theme: paper
+    toc: true
+    highlight: tango
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(gridExtra)
+library(grid)
+```
+
+## Introduction
+
+Below, I will be exploring a tidy dataset of white wine to find out what 
+chemical properties most influence the sensory quality of taste. I'll
+also look at the chemical properties that have a close relation to 
+others. The quality variable is based on taste testing scores between 
+0 and 10 (worst to best), all the other variables are based on 
+physiochemical tests. 
+
+I want to start by looking at the structure of the dataset.
+
+```{r echo=FALSE, Load_the_Data}
+# Load the dataset
+wine <- read.csv('wineQualityWhites.csv')
+
+# Display dataset information
+str(wine)
+```
+
+I am going to remove column "X", as this column is an identifier, and I don't 
+want these numbers included in any statistics. After that, there will be 11
+input variables and 1 output variable (quality), each with 4898 observations. 
+
+```{r echo=FALSE}
+# Removing column 'X'
+wine$X <- NULL
+```
+
+***
+
+## Univariate Plots Section
+
+For each variable, I will start by plotting the original data in a histogram 
+and a boxplot to view the distribution and outliers. This will be followed by 
+a histogram and boxplot of the current subset. I will then remove outliers 
+from the variable in the subset, and plot again.
+
+The method I will be using to remove outliers is by identifying outliers 
+1.5 x the upper and lower InterQuartile (IQR) bounds (1.5 * IQR).
+
+### Quality
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3), Univariate_Plots}
+theme <- theme_light()
+
+# quality histogram
+p1 <- ggplot(wine, aes(x = quality)) +
+        geom_histogram(color = 'darkred', bins = 7) + theme
+
+# Boxplot  
+p1_1 <- ggplot(wine, aes(x = 1, y = quality)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkred', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p1, p1_1, ncol = 2, widths = 2:1)
+```
+
+*The original quality distribution is mostly normal with a few outliers in the 
+upper and lower ends of the range.
+
+subset with outliers removed:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_1 <- quantile(wine$quality, .25)
+q3_1 <- quantile(wine$quality, .75)
+iqr_1 <- IQR(wine$quality)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub <- subset(wine, wine$quality> (q1_1 - 1.5*iqr_1) & 
+                 wine$quality< (q3_1 + 1.5*iqr_1))
+
+p1_2 <- ggplot(wine_sub, aes(x = quality)) + 
+        geom_histogram(color = 'darkred', bins = 4) + theme
+
+# Boxplot  
+p1_3 <- ggplot(wine_sub, aes(x = 1, y = quality)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkred', alpha = 0.5) + theme
+
+grid.arrange(p1_2, p1_3, ncol = 2, widths = 2:1)
+dim(wine_sub)
+```
+
+200 outliers were removed from the original data. This leaves 4698 observations 
+with quality scores only between 4 and 7 in the new subset. 
+
+***
+
+### Fixed Acidity
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(10,3)}
+# I will be using different colors to help differentiate variables 
+#  visually in the html output
+
+# fixed.acidity histogram
+p2 <- ggplot(wine, aes(x = fixed.acidity)) + 
+        geom_histogram(color = 'deeppink', bins = 30) + theme
+
+# Boxplot  
+p2_1 <- ggplot(wine, aes(x = 1, y = fixed.acidity)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deeppink', alpha = 0.5) + theme
+
+grid.arrange(p2, p2_1, ncol = 2, widths = 2:1)
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p2_2 <- ggplot(wine_sub, aes(x = fixed.acidity)) + 
+        geom_histogram(color = 'deeppink', bins = 30) + theme
+
+# Boxplot  
+p2_3 <- ggplot(wine_sub, aes(x = 1, y = fixed.acidity)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deeppink', alpha = 0.5) + theme
+
+
+# Plot together
+grid.arrange(p2_2, p2_3, ncol = 2, widths = 2:1)  
+```
+
+In the original data, fixed.acidity appears to be normally distributed 
+in the histogram and slightly right skewed. The boxplot shows that there 
+are a few outliers on the upper and lower ends of the range. 
+
+The subset data isn't much different, since the only rows that 
+have been removed are the outliers in the quality variable. I will now remove 
+the fixed.acidity outliers in the subset dataframe.
+
+subset with outliers removed:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_2 <- quantile(wine_sub$fixed.acidity, .25)
+q3_2 <- quantile(wine_sub$fixed.acidity, .75)
+iqr_2 <- IQR(wine_sub$fixed.acidity)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub1 <- subset(wine_sub, wine_sub$fixed.acidity> (q1_2 - 1.5*iqr_2) & 
+                 wine_sub$fixed.acidity< (q3_2 + 1.5*iqr_2))
+
+p2_4 <- ggplot(wine_sub1, aes(x = fixed.acidity)) + 
+        geom_histogram(color = 'deeppink', bins = 20) + theme
+
+# Boxplot  
+p2_5 <- ggplot(wine_sub1, aes(x = 1, y = fixed.acidity)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deeppink', alpha = 0.5) + theme
+
+grid.arrange(p2_4, p2_5, ncol = 2, widths = 2:1)
+dim(wine_sub1)
+```
+
+138 outliers removed and fixed.acidity is now normally distributed.
+
+***
+
+
+### Volatile Acidity
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# volatile.acidity histogram
+p3 <- ggplot(wine, aes(x = volatile.acidity)) +
+        geom_histogram(color = 'deeppink4', bins = 40) + theme
+
+# Boxplot  
+p3_1 <- ggplot(wine, aes(x = 1, y = volatile.acidity)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deeppink4', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p3, p3_1, ncol = 2, widths = 2:1)
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p3_2 <- ggplot(wine_sub1, aes(x = volatile.acidity)) + 
+        geom_histogram(color = 'deeppink4', bins = 40) + theme
+
+# Boxplot  
+p3_3 <- ggplot(wine_sub1, aes(x = 1, y = volatile.acidity)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deeppink4', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p3_2, p3_3, ncol = 2, widths = 2:1)  
+```
+
+In the original data, volatile.acidity is bell-curve shaped with uniform 
+distribution on both sides of the peak but becomes slightly right-skewed. 
+There are several outliers in the upper end of the range.
+
+The subset data shows almost the same as the original data. I'll now remove
+the volatile.acidity outliers in the subset dataframe.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_3 <- quantile(wine_sub1$volatile.acidity, .25)
+q3_3 <- quantile(wine_sub1$volatile.acidity, .75)
+iqr_3 <- IQR(wine_sub1$volatile.acidity)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub2 <- subset(wine_sub1, wine_sub1$volatile.acidity> (q1_3 - 1.5*iqr_3) & 
+                 wine_sub1$volatile.acidity< (q3_3 + 1.5*iqr_3))
+
+p3_4 <- ggplot(wine_sub2, aes(x = volatile.acidity)) + 
+        geom_histogram(color = 'deeppink4', bins = 20) + theme
+
+# Boxplot  
+p3_5 <- ggplot(wine_sub2, aes(x = 1, y = volatile.acidity)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deeppink4', alpha = 0.5) + theme
+
+grid.arrange(p3_4, p3_5, ncol = 2, widths = 2:1)
+dim(wine_sub2)
+```
+
+162 outliers removed and the distribution is uniform across the peak, then 
+becomes slightly right-skewed but mostly normal.
+
+***
+
+### Citric Acid
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# citric.acid histogram
+p4 <- ggplot(wine, aes(x = citric.acid)) +
+        geom_histogram(color = 'darkorchid1', bins = 40) + theme
+
+# Boxplot  
+p4_1 <- ggplot(wine, aes(x = 1, y = citric.acid)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorchid1', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p4, p4_1, ncol = 2, widths = 2:1) 
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p4_2 <- ggplot(wine_sub2, aes(x = citric.acid)) + 
+        geom_histogram(color = 'darkorchid1', bins = 40) + theme
+
+# Boxplot  
+p4_3 <- ggplot(wine_sub2, aes(x = 1, y = citric.acid)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorchid1', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p4_2, p4_3, ncol = 2, widths = 2:1)  
+```
+
+Of the original dataset, citric acid distribution is slightly right-skewed 
+with a small spike in the upper range of the shoulder of the curve. There are 
+outliers in the upper and lower ends of the range as shown in the boxplot.
+
+The subset data is close to the original dataset pattern.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_4 <- quantile(wine_sub2$citric.acid, .25)
+q3_4 <- quantile(wine_sub2$citric.acid, .75)
+iqr_4 <- IQR(wine_sub2$citric.acid)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub3 <- subset(wine_sub2, wine_sub2$citric.acid> (q1_4 - 1.5*iqr_4) & 
+                 wine_sub2$citric.acid< (q3_4 + 1.5*iqr_4))
+
+p4_4 <- ggplot(wine_sub3, aes(x = citric.acid)) + 
+        geom_histogram(color = 'darkorchid1', bins = 20) + theme
+
+# Boxplot  
+p4_5 <- ggplot(wine_sub3, aes(x = 1, y = citric.acid)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorchid1', alpha = 0.5) + theme
+
+grid.arrange(p4_4, p4_5, ncol = 2, widths = 2:1)
+dim(wine_sub3)
+```
+
+260 outliers removed and the histogram shows that the density peak is 
+flattened out a bit. The small spike is still apparent in the upper range 
+of the shoulder of the curve. The boxplot shows that there are some new outliers,
+but I will leave these in the data, as I expect they are from the small data
+spike.
+
+***
+
+### Residual Sugar
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# residual.sugar histogram
+p5 <- ggplot(wine, aes(x = residual.sugar)) +
+        geom_histogram(color = 'darkorchid4', bins = 40) + theme
+
+# Boxplot  
+p5_1 <- ggplot(wine, aes(x = 1, y = residual.sugar)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorchid4', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p5, p5_1, ncol = 2, widths = 2:1) 
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p5_2 <- ggplot(wine_sub3, aes(x = residual.sugar)) + 
+        geom_histogram(color = 'darkorchid4', bins = 40) + theme
+
+# Boxplot  
+p5_3 <- ggplot(wine_sub3, aes(x = 1, y = residual.sugar)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorchid4', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p5_2, p5_3, ncol = 2, widths = 2:1)  
+```
+
+In the original data, residual sugar distribution is very right-skewed with 
+a high number of observations on the lower end of the range. The boxplot 
+shows that there are outliers in the upper end.
+
+In the subset data, some of the upper-end outliers have already been removed
+from previous outlier removal. The data is still heavy on the lower end of
+the range followed by a more uniform spread of the higher values.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_5 <- quantile(wine_sub3$residual.sugar, .25)
+q3_5 <- quantile(wine_sub3$residual.sugar, .75)
+iqr_5 <- IQR(wine_sub3$residual.sugar)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub4 <- subset(wine_sub3, wine_sub3$residual.sugar> (q1_5 - 1.5*iqr_5) & 
+                 wine_sub3$residual.sugar< (q3_5 + 1.5*iqr_5))
+
+p5_4 <- ggplot(wine_sub4, aes(x = residual.sugar)) + 
+        geom_histogram(color = 'darkorchid4', bins = 40) + theme
+
+# Boxplot  
+p5_5 <- ggplot(wine_sub4, aes(x = 1, y = residual.sugar)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorchid4', alpha = 0.5) + theme
+
+grid.arrange(p5_4, p5_5, ncol = 2, widths = 2:1)
+dim(wine_sub4)
+```
+
+8 outliers were removed and the data is right-skewed.
+
+***
+
+### Chlorides
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# chlorides histogram
+p6 <- ggplot(wine, aes(x = chlorides)) +
+        geom_histogram(color = 'darkblue', bins = 40) + theme
+
+# Boxplot  
+p6_1 <- ggplot(wine, aes(x = 1, y = chlorides)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkblue', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p6, p6_1, ncol = 2, widths = 2:1) 
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p6_2 <- ggplot(wine_sub4, aes(x = chlorides)) + 
+        geom_histogram(color = 'darkblue', bins = 40) + theme
+
+# Boxplot  
+p6_3 <- ggplot(wine_sub4, aes(x = 1, y = chlorides)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkblue', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p6_2, p6_3, ncol = 2, widths = 2:1)  
+```
+
+Both the original dataset and the subset show that chlorides have a mostly 
+normal distribution, but with outliers in the upper and lower ends of the range.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_6 <- quantile(wine_sub4$chlorides, .25)
+q3_6 <- quantile(wine_sub4$chlorides, .75)
+iqr_6 <- IQR(wine_sub4$chlorides)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub5 <- subset(wine_sub4, wine_sub4$chlorides> (q1_6 - 1.5*iqr_6) & 
+                 wine_sub4$chlorides< (q3_6 + 1.5*iqr_6))
+
+p6_4 <- ggplot(wine_sub5, aes(x = chlorides)) + 
+        geom_histogram(color = 'darkblue', bins = 20) + theme
+
+# Boxplot  
+p6_5 <- ggplot(wine_sub5, aes(x = 1, y = chlorides)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkblue', alpha = 0.5) + theme
+
+grid.arrange(p6_4, p6_5, ncol = 2, widths = 2:1)
+dim(wine_sub5)
+```
+
+145 outliers removed and the data has a better, normal distribution.
+
+***
+
+### Free Sulfur Dioxide
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# free.sulfur.dioxide histogram
+p7 <- ggplot(wine, aes(x = free.sulfur.dioxide)) +
+        geom_histogram(color = 'blue', bins = 40) + theme
+
+# Boxplot  
+p7_1 <- ggplot(wine, aes(x = 1, y = free.sulfur.dioxide)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'blue', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p7, p7_1, ncol = 2, widths = 2:1)
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p7_2 <- ggplot(wine_sub5, aes(x = free.sulfur.dioxide)) + 
+        geom_histogram(color = 'blue', bins = 30) + theme
+
+# Boxplot  
+p7_3 <- ggplot(wine_sub5, aes(x = 1, y = free.sulfur.dioxide)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'blue', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p7_2, p7_3, ncol = 2, widths = 2:1)  
+```
+
+Both the original dataset and the subset show that free sulfur dioxide has 
+a mostly normal distribution with outliers in the upper end.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_7 <- quantile(wine_sub5$free.sulfur.dioxide, .25)
+q3_7 <- quantile(wine_sub5$free.sulfur.dioxide, .75)
+iqr_7 <- IQR(wine_sub5$free.sulfur.dioxide)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub6 <- subset(wine_sub5, wine_sub5$free.sulfur.dioxide> (q1_7 - 1.5*iqr_7) & 
+                 wine_sub5$free.sulfur.dioxide< (q3_7 + 1.5*iqr_7))
+
+p7_4 <- ggplot(wine_sub6, aes(x = free.sulfur.dioxide)) + 
+        geom_histogram(color = 'blue', bins = 20) + theme
+
+# Boxplot  
+p7_5 <- ggplot(wine_sub6, aes(x = 1, y = free.sulfur.dioxide)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'blue', alpha = 0.5) + theme
+
+grid.arrange(p7_4, p7_5, ncol = 2, widths = 2:1)
+dim(wine_sub6)
+```
+
+43 outliers removed and the distribution is normal.
+
+***
+
+### Total Sulfur Dioxide
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# total.sulfur.dioxide histogram
+p8 <- ggplot(wine, aes(x = total.sulfur.dioxide)) +
+        geom_histogram(color = 'deepskyblue4', bins = 40) + theme
+
+# Boxplot  
+p8_1 <- ggplot(wine, aes(x = 1, y = total.sulfur.dioxide)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deepskyblue4', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p8, p8_1, ncol = 2, widths = 2:1)
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p8_2 <- ggplot(wine_sub6, aes(x = total.sulfur.dioxide)) + 
+        geom_histogram(color = 'deepskyblue4', bins = 30) + theme
+
+# Boxplot  
+p8_3 <- ggplot(wine_sub6, aes(x = 1, y = total.sulfur.dioxide)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deepskyblue4', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p8_2, p8_3, ncol = 2, widths = 2:1)  
+```
+
+In the original dataset, total sulfur dioxide has a wide distribution with 
+outliers in the upper and lower ends of the range.
+
+The subset data is more normalized but with some outliers in the upper
+end of the range.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_8 <- quantile(wine_sub6$total.sulfur.dioxide, .25)
+q3_8 <- quantile(wine_sub6$total.sulfur.dioxide, .75)
+iqr_8 <- IQR(wine_sub6$total.sulfur.dioxide)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub7 <- subset(wine_sub6, wine_sub6$total.sulfur.dioxide> (q1_8 - 1.5*iqr_8) & 
+                 wine_sub6$total.sulfur.dioxide< (q3_8 + 1.5*iqr_8))
+
+p8_4 <- ggplot(wine_sub7, aes(x = total.sulfur.dioxide)) + 
+        geom_histogram(color = 'deepskyblue4', bins = 30) + theme
+
+# Boxplot  
+p8_5 <- ggplot(wine_sub7, aes(x = 1, y = total.sulfur.dioxide)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'deepskyblue4', alpha = 0.5) + theme
+
+grid.arrange(p8_4, p8_5, ncol = 2, widths = 2:1)
+dim(wine_sub7)
+```
+
+3 outliers were removed, and total sulfur dioxide has a normal distribution.
+
+***
+
+### Density
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# density histogram
+p9 <- ggplot(wine, aes(x = density)) +
+        geom_histogram(color = 'aquamarine4', bins = 40) + theme
+
+# Boxplot  
+p9_1 <- ggplot(wine, aes(x = 1, y = density)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'aquamarine4', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p9, p9_1, ncol = 2, widths = 2:1) 
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p9_2 <- ggplot(wine_sub7, aes(x = density)) + 
+        geom_histogram(color = 'aquamarine4', bins = 40) + theme
+
+# Boxplot  
+p9_3 <- ggplot(wine_sub7, aes(x = 1, y = density)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'aquamarine4', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p9_2, p9_3, ncol = 2, widths = 2:1)  
+```
+
+In the original dataset, density distribution is mostly normal, slightly 
+right-skewed and has outliers in the upper end of the range.
+
+The subset data is more normalized, slightly right-skewed, and with no 
+outliers shown in the boxplot. For consistency reasons, I will still perform
+the outlier calculations on the subset.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_9 <- quantile(wine_sub7$density, .25)
+q3_9 <- quantile(wine_sub7$density, .75)
+iqr_9 <- IQR(wine_sub7$density)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub8 <- subset(wine_sub7, wine_sub7$density> (q1_9 - 1.5*iqr_9) & 
+                 wine_sub7$density< (q3_9 + 1.5*iqr_9))
+
+p9_4 <- ggplot(wine_sub8, aes(x = density)) + 
+        geom_histogram(color = 'aquamarine4', bins = 40) + theme
+
+# Boxplot  
+p9_5 <- ggplot(wine_sub8, aes(x = 1, y = density)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'aquamarine4', alpha = 0.5) + theme
+
+grid.arrange(p9_4, p9_5, ncol = 2, widths = 2:1)
+dim(wine_sub8)
+```
+
+As I suspected, no outliers were removed after the calculations.
+
+***
+
+### pH
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# pH histogram
+p10 <- ggplot(wine, aes(x = pH)) +
+        geom_histogram(color = 'darkseagreen2', bins = 30) + theme
+
+# Boxplot  
+p10_1 <- ggplot(wine, aes(x = 1, y = pH)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkseagreen2', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p10, p10_1, ncol = 2, widths = 2:1)
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p10_2 <- ggplot(wine_sub8, aes(x = pH)) + 
+        geom_histogram(color = 'darkseagreen2', bins = 30) + theme
+
+# Boxplot  
+p10_3 <- ggplot(wine_sub8, aes(x = 1, y = pH)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkseagreen2', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p10_2, p10_3, ncol = 2, widths = 2:1)
+```
+
+In both the original dataset and the subset, pH has a mostly symmetrical, 
+wide distribution with outliers on the upper and lower ends of the range.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_10 <- quantile(wine_sub8$pH, .25)
+q3_10 <- quantile(wine_sub8$pH, .75)
+iqr_10 <- IQR(wine_sub8$pH)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub9 <- subset(wine_sub8, wine_sub8$pH> (q1_10 - 1.5*iqr_10) & 
+                 wine_sub8$pH< (q3_10 + 1.5*iqr_10))
+
+p10_4 <- ggplot(wine_sub9, aes(x = pH)) + 
+        geom_histogram(color = 'darkseagreen2', bins = 20) + theme
+
+# Boxplot  
+p10_5 <- ggplot(wine_sub9, aes(x = 1, y = pH)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkseagreen2', alpha = 0.5) + theme
+
+grid.arrange(p10_4, p10_5, ncol = 2, widths = 2:1)
+dim(wine_sub9)
+```
+
+54 outliers were removed and the distribution is normal.
+
+***
+
+### Sulphates
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# sulphates histogram
+p11 <- ggplot(wine, aes(x = sulphates)) +
+        geom_histogram(color = 'darkolivegreen2', bins = 30) + theme
+
+# Boxplot  
+p11_1 <- ggplot(wine, aes(x = 1, y = sulphates)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkolivegreen2', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p11, p11_1, ncol = 2, widths = 2:1)
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p11_2 <- ggplot(wine_sub9, aes(x = sulphates)) + 
+        geom_histogram(color = 'darkolivegreen2', bins = 30) + theme
+
+# Boxplot  
+p11_3 <- ggplot(wine_sub9, aes(x = 1, y = sulphates)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkolivegreen2', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p11_2, p11_3, ncol = 2, widths = 2:1)
+```
+
+In both the original dataset and the subset, sulphates have a distribution that 
+is slightly right-skewed, with outliers in the upper end of the range.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_11 <- quantile(wine_sub9$sulphates, .25)
+q3_11 <- quantile(wine_sub9$sulphates, .75)
+iqr_11 <- IQR(wine_sub9$sulphates)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub10 <- subset(wine_sub9, wine_sub9$sulphates> (q1_11 - 1.5*iqr_11) & 
+                 wine_sub9$sulphates< (q3_11 + 1.5*iqr_11))
+
+p11_4 <- ggplot(wine_sub10, aes(x = sulphates)) + 
+        geom_histogram(color = 'darkolivegreen2', bins = 20) + theme
+
+# Boxplot  
+p11_5 <- ggplot(wine_sub10, aes(x = 1, y = sulphates)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkolivegreen2', alpha = 0.5) + theme
+
+grid.arrange(p11_4, p11_5, ncol = 2, widths = 2:1)
+dim(wine_sub10)
+```
+
+88 outliers removed and the data is bimodal, and slightly right-skewed.
+
+***
+
+### Alcohol
+
+original:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# alcohol histogram
+p12 <- ggplot(wine, aes(x = alcohol)) + 
+        geom_histogram(color = 'darkorange', bins = 30) + theme
+
+# Boxplot  
+p12_1 <- ggplot(wine, aes(x = 1, y = alcohol)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorange', alpha = 0.5) + theme 
+
+# Plot together
+grid.arrange(p12, p12_1, ncol = 2, widths = 2:1)
+```
+
+subset:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# fixed.acidity histogram
+p12_2 <- ggplot(wine_sub10, aes(x = alcohol)) + 
+        geom_histogram(color = 'darkorange', bins = 30) + theme
+
+# Boxplot  
+p12_3 <- ggplot(wine_sub10, aes(x = 1, y = alcohol)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorange', alpha = 0.5) + theme
+
+# Plot together
+grid.arrange(p12_2, p12_3, ncol = 2, widths = 2:1)
+```
+
+In both the original dataset and the subset, alcohol has a right-skewed, 
+wide, and somewhat uniform distribution with no outliers. However, as I
+did above, I will perform the outlier calculation for consistency.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 3)}
+# Find Q1, Q3, and interquartile range
+q1_12 <- quantile(wine_sub10$alcohol, .25)
+q3_12 <- quantile(wine_sub10$alcohol, .75)
+iqr_12 <- IQR(wine_sub10$alcohol)
+
+# Only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+wine_sub11 <- subset(wine_sub10, wine_sub10$alcohol> (q1_12 - 1.5*iqr_12) & 
+                 wine_sub10$alcohol< (q3_12 + 1.5*iqr_12))
+
+p12_4 <- ggplot(wine_sub11, aes(x = alcohol)) + 
+        geom_histogram(color = 'darkorange', bins = 30) + theme
+
+# Boxplot  
+p12_5 <- ggplot(wine_sub11, aes(x = 1, y = alcohol)) +
+        geom_jitter(alpha = 0.3) +
+        geom_boxplot(color = 'darkorange', alpha = 0.5) + theme
+
+grid.arrange(p12_4, p12_5, ncol = 2, widths = 2:1)
+dim(wine_sub11)
+```
+
+As suspected, no outliers were removed after the calculations.
+
+***
+
+## Univariate Analysis
+
+1. What is the structure of your dataset?
+
+* This is a tidy, multivariate dataset consisting of 12 variables and 4898 
+observations. 11 of the variables are numerical and 1 (quality) is an integer.
+
+2. What is/are the main feature(s) of interest in your dataset?
+
+* Quality is the main feature of this dataset. 
+
+3. What other features in the dataset do you think will help support your 
+investigation into your feature(s) of interest?
+
+* All the other variables will each support my investigation of finding 
+what chemical properties most affect the quality.
+
+4. Did you create any new variables from existing variables in the dataset?
+
+* I created a subset dataframe of the original data, outliers removed.
+
+5. Of the features you investigated, were there any unusual distributions?
+
+* Yes, citric.acid had a small peak to the right of the main peak.
+Residual.sugar is dense around 1 and 2, but spreads to the right over a 
+wide range.  
+
+6. Did you perform any operations on the data to tidy, adjust, or change 
+the form of the data? If so, why did you do this?
+
+* I did not modify any parts of the data other than creating a separate 
+dataframe with outliers removed.
+
+***
+
+## Bivariate Plots Section 
+
+I think that the fastest way to identify correlations between variables 
+would be to create a pairs plot.
+
+```{r echo=FALSE, Bivariate_Plots, warning=FALSE, fig.dim = c(10, 9)}
+# Creating a pairs correlation graph
+pairs.panels(wine_sub11)
+```
+
+Based on the plot above, there are a few variables that I'd like to create 
+individual correlation plots to get a better view. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Plot customization for this section
+bi_point <- geom_point(alpha = 0.3, position = 'jitter')
+bi_smooth <- stat_smooth(method = 'lm', color = 'darkred')
+
+# Scatter plot
+ggplot(wine_sub11, aes(density, residual.sugar)) +
+  theme + bi_point + bi_smooth
+
+# Correlation score
+cor(wine_sub11$density, wine_sub11$residual.sugar)
+```
+
+Density and residual sugar have the strongest correlation with a score of 0.85. 
+The plot confirms this within a tight relationship and a positive correlation.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine_sub11, aes(free.sulfur.dioxide, total.sulfur.dioxide)) + 
+  theme + bi_point + bi_smooth
+
+# Correlation score
+cor(wine_sub11$free.sulfur.dioxide, wine_sub11$total.sulfur.dioxide)
+```
+
+Free sulfur dioxide and total sulfur dioxide have the next strongest 
+correlation with a score of 0.62. Even though free sulfur dioxide is a 
+continuous variable, there does seem to be a slight pattern of discrete 
+grouping in the way the variable is recorded.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine_sub11, aes(density, total.sulfur.dioxide)) + 
+  theme + bi_point + bi_smooth
+
+# Correlation score
+cor(wine_sub11$density, wine_sub11$total.sulfur.dioxide)
+```
+
+Density and total sulfur dioxide have a correlation score of 0.55. The plot 
+confirms a positive correlation between these two variables.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine_sub11, aes(density, chlorides)) + 
+  theme + bi_point + bi_smooth
+
+# Correlation score
+cor(wine_sub11$density, wine_sub11$chlorides)
+```
+
+Density and chlorides have a correlation score of 0.50. This is also confirmed
+with the positive correlation plot between these two variables.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Scatter plot
+ggplot(wine_sub11, aes(density, alcohol)) + 
+  theme + bi_point + bi_smooth
+
+# Correlation score
+cor(wine_sub11$density, wine_sub11$alcohol)
+```
+
+Density vs alcohol is my strongest negative correlation with a score of -0.82.
+This is confirmed in the plot with a strong negative correlation.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 5)}
+# Scatter plot
+ggplot(wine_sub11, aes(factor(quality), alcohol)) + 
+  theme + bi_point + stat_boxplot(color = 'darkred', alpha = 0.5)
+
+# Correlation score
+cor(wine_sub11$quality, wine_sub11$alcohol)
+```
+
+This plot shows that most of the alcohol observations are in 
+quality score 6, with an overall, positive correlation score of 0.41. 
+
+***
+
+### Bivariate Analysis
+
+1. How did the feature(s) of interest vary with other features in 
+the dataset?
+
+* From the pairs correlation plot, I could see that as citric acid increases,
+the quality decreases. When free sulfur dioxide is low, there is a positive 
+correlation with quality. The quality then starts dropping as 
+free sulfur dioxide increases. This is the same with total sulfur dioxide. 
+Alcohol was the highest-scoring input variable with quality.
+
+2. Did you observe any interesting relationships between the other features 
+(not the main feature(s) of interest)?
+
+* I found it interesting that density and alcohol have the lowest correlation,
+yet density and residual.sugar have the strongest correlation.
+
+3. What was the strongest relationship you found?
+
+* For the input variables, residual.sugar and density had the highest 
+correlation with a score of 0.839. The highest correlation with the output 
+variable of quality was with the alcohol variable. The strongest negative 
+correlation was between density and alcohol with a score of -0.78.
+
+***
+
+## Multivariate Plots Section 
+
+Of the plots above, I'd like to include quality and see the correlations.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim=c(10,4), Multivariate_Plots}
+# Plot customization for this section
+mu_point <- geom_point(alpha = 0.3, position = 'jitter')
+mu_smooth <- stat_smooth(method = 'lm', alpha = 0.3)
+mu_colors <- scale_color_discrete() #, guide=guide_legend(title='Quality'))
+
+# Multivariate plot
+ggplot(wine_sub11, aes(x = density, y = residual.sugar, 
+                       color = factor(quality))) +
+  theme + mu_point + mu_smooth + mu_colors
+```
+
+Here, I can see that the quality score of 5 has the strongest correlation 
+between residual.sugar and density. 
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Multivariate plot
+ggplot(wine_sub11, aes(free.sulfur.dioxide, total.sulfur.dioxide, 
+                       color = factor(quality))) +
+  theme + mu_point + mu_smooth + mu_colors
+```
+
+total.sulfur.dioxide and free.sulfur.dioxide have an almost uniform positive 
+correlation with every unique quality observation with 5 being the strongest.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Multivariate plot
+ggplot(wine_sub11, aes(density, total.sulfur.dioxide, 
+                       color = factor(quality))) +
+  theme + mu_point + mu_smooth + mu_colors
+```
+
+total.sulfur.dioxide and density also have a positive correlation
+with every unique quality observation. The quality score of 4 stands out, 
+however, the quality score of 5 seems to be the strongest.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Multivariate plot
+ggplot(wine_sub11, aes(density, chlorides, color = factor(quality))) +
+  theme + mu_point + mu_smooth + mu_colors
+```
+
+Much like the plot above, residual.sugar and total.sulfur.dioxide have a 
+positive correlation with every unique quality observation. The quality 
+score of 4 stands out, however, the quality score of 7 seems to have
+the strongest positive correlation path.
+
+***
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.dim = c(10, 4)}
+# Multivariate plot
+ggplot(wine_sub11, aes(density, alcohol, color = factor(quality))) +
+  theme + mu_point + mu_smooth + mu_colors
+```
+
+This plot shows that as alcohol content decreases and density increases,
+the quality drops.
+
+***
+
+### Multivariate Analysis
+
+1. Were there features that strengthened each other in terms of 
+looking at your feature(s) of interest?
+
+* Yes. I found that chlorides and density had a strong correlation
+with the higher scores of quality.
+
+2. Were there any interesting or surprising interactions between features?
+
+* Yes. The correlation between alcohol and quality is positive yet, none of 
+the other input variables had a strong positive correlation with alcohol. 
+
+***
+
+## Final Plots and Summary 
+
+### Plot One
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_One, fig.dim = c(10, 3)}
+# Alcohol histogram
+ggplot(wine_sub11, aes(x = alcohol)) + theme +
+  labs(title = 'Alcohol Distribution', x = "alcohol (%)") +
+  geom_histogram(color = 'darkorange') +
+  geom_density(alpha = 0.5, color = 'darkorange') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Description One
+
+I chose alcohol content as my first plot because I found it interesting 
+how wide and somewhat uniform the distribution is compared to all the 
+other variables.
+
+***
+
+### Plot Two
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Two, fig.dim = c(10, 6)}
+# Density vs residual sugar scatter plot
+p_1 <- ggplot(wine_sub11, aes(density, residual.sugar)) + theme +
+  stat_smooth(method = 'lm', color = 'aquamarine4', alpha = 0.5) +
+  geom_point(color = 'darkorchid4', alpha = 0.3, position = 'jitter') +
+  coord_cartesian(ylim = c(-1, 21)) + 
+  labs(title = 'Density vs. Residual Sugar', 
+       x = 'density (g/cm^3)', y = 'residual sugar (g/dm)') +
+  theme(plot.title = element_text(hjust = 0.3)) 
+
+# Density vs alcohol scatter plot  
+p_2 <- ggplot(wine_sub11, aes(density, alcohol)) + theme + 
+  stat_smooth(method = 'lm', color = 'aquamarine4', alpha = 0.5) +
+  geom_point(color = 'darkorange', alpha = 0.3, position = 'jitter') +
+  coord_cartesian(ylim = c(8, 14)) + 
+  labs(title = 'Density vs. Alcohol', x = 'density (g/cm^3)', 
+       y = 'alcohol (%)') +
+  theme(plot.title = element_text(hjust = 0.3)) 
+
+# Plot the two side by side
+grid.arrange(p_1, p_2, ncol = 2, top = textGrob('Strongest Relationships', 
+                                                gp = gpar(fontsize = 15)))
+```
+
+### Description Two
+
+I chose this as my second plot to show how there is a strong positive 
+correlation between density and residual.sugar, yet a strong negative 
+correlation between density and alcohol.
+
+***
+
+### Plot Three
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Three, fig.dim=c(10,6)}
+# Density vs residual sugar with quality
+ggplot(wine_sub11, aes(density, residual.sugar, color = factor(quality))) + 
+  theme + mu_point + mu_smooth + 
+  scale_color_discrete(guide=guide_legend(title='Quality')) +
+  coord_cartesian(ylim = c(-1, 22)) +
+  labs(title = 'Density vs. Residual Sugar with Quality', 
+       x = 'density (g/cm^3)', y = 'residual sugar (g/dm^3)') +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+### Description Three
+
+I chose this plot to reflect the strong positive correlation between 
+residual.sugar and density with quality factored in the point colors and
+correlation lines. 
+
+***
+
+## Reflection 
+
+From this analysis, I found that better tasting white wine is low in 
+density and low in residual sugar. I was also surprised to discover how white 
+wine with a high alcohol by volume improved quality score only by perception, 
+as this variable did not correlate to any other chemical variable. This makes 
+me wonder if the taste testers knew and were influenced by information about 
+each of the white wines they tested, affecting the quality score. 
+
+Some of the struggles I had were sticking to the idea of a "quick and dirty" 
+analysis. Through much of this project, I wanted to make beautiful looking
+plots, so I spent a lot of wasted time researching plot aesthetics and not
+analyzing the data. Once I realized what I was doing and that I 
+needed to keep it "quick and dirty" the analysis and plotting came more easily. 
+However, after my revision, most of my plots are not "quick and dirty".
+
+I do think this dataset could be used in machine learning for predictive 
+models of what physiochemicals influence the taste of white wine. However, 
+it should be used alongside many other similar datasets from controlled taste 
+testing events. It should also be noted that the sensory quality score of wine 
+would most likely vary in different regions of the world. What is considered 
+a great tasting wine in one region, may be completely opposite in another.
+
+The dataset used in this analysis was downloaded from:
+
+* https://s3.amazonaws.com/udacity-hosted-downloads/ud651/wineQualityWhites.csv
+
+For more information regarding this dataset, please visit these sites 
+[Cortez et al., 2009]: 
+
+* http://dx.doi.org/10.1016/j.dss.2009.05.016
+* http://www3.dsi.uminho.pt/pcortez/winequality09.pdf
+* http://www3.dsi.uminho.pt/pcortez/dss09.bib
